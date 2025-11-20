@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "node-package-template",
+      "name": "bun-plugin-coffeescript",
       "dependencies": {
         "coffeescript": "^2.7.0",
       },
