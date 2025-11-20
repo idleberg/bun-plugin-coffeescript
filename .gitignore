@@ -1,15 +1,11 @@
+# package manager
 node_modules/
-bin/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# build
 dist/
-lib/
-.eslintcache
 
-# Development
-
-# Test
-coverage/
-test-results/
-
-# Project specific
-app.js
-test.ts
+# development
+playground/

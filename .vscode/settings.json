@@ -1,4 +1,6 @@
 {
+	"bun.debugTerminal.enabled": true,
+	"bun.test.filePattern": "**/*.spec.ts",
 	"editor.codeActionsOnSave": {
 		"source.organizeImports.biome": "explicit",
 		"source.fixAll.biome": "explicit"
@@ -13,6 +15,9 @@
 	},
 	"[jsonc]": {
 		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[toml]": {
+		"editor.defaultFormatter": "tamasfe.even-better-toml"
 	},
 	"[typescript]": {
 		"editor.defaultFormatter": "biomejs.biome"

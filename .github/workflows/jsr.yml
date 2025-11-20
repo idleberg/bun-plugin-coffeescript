@@ -1,0 +1,35 @@
+name: Publish on JSR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.x
+
+      - uses: actions/cache@v4
+        name: Set up Deno cache
+        with:
+          path: |
+            ~/.deno
+            ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - run: |
+          deno install --no-lock --allow-scripts=npm:lefthook
+          deno publish --dry-run
+          deno publish

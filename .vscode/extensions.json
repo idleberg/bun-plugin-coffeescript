@@ -1,3 +1,8 @@
 {
-	"recommendations": ["biomejs.biome", "editorconfig.editorconfig"]
+	"recommendations": [
+		"biomejs.biome",
+		"editorconfig.editorconfig",
+		"oven.bun-vscode",
+		"tamasfe.even-better-toml"
+	]
 }

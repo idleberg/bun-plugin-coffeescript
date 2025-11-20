@@ -1,4 +1,4 @@
-# node-package-template
+# bun-plugin-coffeescript
 
 > Just my personal package template.
 

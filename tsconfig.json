@@ -1,8 +1,9 @@
 {
 	"extends": "@idleberg/configs/tsc",
 	"compilerOptions": {
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"types": ["@types/node", "vitest/globals"]
+		"forceConsistentCasingInFileNames": true,
+		"lib": ["DOM"],
+		"target": "esnext",
+		"types": ["bun-types", "node"]
 	}
 }
