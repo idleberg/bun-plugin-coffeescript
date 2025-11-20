@@ -1,7 +1,7 @@
 {
 	"name": "bun-plugin-coffeescript",
 	"version": "0.0.0",
-	"description": "Bun plugin to support CoffeeScript files",
+	"description": "Use CoffeeScript with Bun, old meets new",
 	"license": "MIT",
 	"author": "Jan T. Sott",
 	"repository": {
