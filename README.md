@@ -1,10 +1,10 @@
 # bun-plugin-coffeescript
 
-> Just my personal package template.
+> Use CoffeeScript with Bun, old meets new.
 
-[![License](https://img.shields.io/github/license/idleberg/node-package-template?color=blue&style=for-the-badge)](https://github.com/idleberg/node-package-template/blob/main/LICENSE)
-[![Version: npm](https://img.shields.io/npm/v/node-package-template?style=for-the-badge)](https://www.npmjs.org/package/node-package-template)
-![GitHub branch check runs](https://img.shields.io/github/check-runs/idleberg/node-package-template/main?style=for-the-badge)
+[![License](https://img.shields.io/github/license/idleberg/bun-plugin-coffeescript?color=blue&style=for-the-badge)](https://github.com/idleberg/bun-plugin-coffeescript/blob/main/LICENSE)
+[![Version: npm](https://img.shields.io/npm/v/bun-plugin-coffeescript?style=for-the-badge)](https://www.npmjs.org/package/bun-plugin-coffeescript)
+![GitHub branch check runs](https://img.shields.io/github/check-runs/idleberg/bun-plugin-coffeescript/main?style=for-the-badge)
 
 ## Description
 
@@ -12,15 +12,24 @@ A template with highly opinionated configuration. Works for me, maybe not for yo
 
 ## Installation
 
-In GitHub, click on *"Use this template"* to create a new repo from this template. Alternatively, you can use degit.
-
 ```shell
-npx degit github:idleberg/node-package-template
+bun install bun-plugin-coffeescript
 ```
 
 ## Usage
 
-That's the one thing you have to figure out!
+```ts
+import CoffeePlugin from "bun-plugin-coffeescript";
+
+Bun.build({
+  entrypoints: ["app.coffee"],
+  outdir: "dist",
+  target: "browser",
+  plugins: [
+    CoffeePlugin(/* compiler options */),
+  ],
+});
+```
 
 ## License
 
