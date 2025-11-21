@@ -6,7 +6,24 @@ import Plugin from '../src/index.ts';
 
 // Type definitions for mocking
 type OnLoadConfig = { filter: RegExp };
-type OnLoadCallback = (args: { path: string }) => Promise<{ contents: string; loader: string }>;
+type OnLoadResultSource = { contents: string; loader: string };
+type OnLoadResultObject = { exports: unknown; loader: string };
+type OnLoadResult = OnLoadResultSource | OnLoadResultObject;
+type OnLoadCallback = (args: { path: string }) => Promise<OnLoadResult>;
+
+/**
+ * Type guard to check if result is a source code result
+ */
+function isSourceResult(result: OnLoadResult): result is OnLoadResultSource {
+	return 'contents' in result;
+}
+
+/**
+ * Type guard to check if result is an object result
+ */
+function isObjectResult(result: OnLoadResult): result is OnLoadResultObject {
+	return 'exports' in result;
+}
 
 /**
  * Helper to test async rejections in Bun 1.0+
@@ -111,6 +128,7 @@ console.log square 5
 			expect(result).toHaveProperty('contents');
 			expect(result).toHaveProperty('loader');
 			expect(result.loader).toBe('js');
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(typeof result.contents).toBe('string');
 			expect(result.contents).toContain('square');
 		});
@@ -144,6 +162,7 @@ dog.speak()
 			if (!onLoadCallback) throw new Error('onLoad was not called');
 			const result = await onLoadCallback({ path: coffeeFile });
 
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(result.contents).toContain('Animal');
 			expect(result.contents).toContain('constructor');
 			expect(result.contents).toContain('speak');
@@ -188,6 +207,7 @@ dog.speak()
 			const result = await onLoadCallback({ path: coffeeFile });
 
 			// When bare: true, the output should not be wrapped in a function
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(result.contents).toContain('add');
 			expect(result.contents).not.toContain('(function()');
 		});
@@ -215,6 +235,7 @@ dog.speak()
 			const result = await onLoadCallback({ path: coffeeFile });
 
 			// Result should not contain inline source map
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(result.contents).toBeDefined();
 			expect(typeof result.contents).toBe('string');
 		});
@@ -239,6 +260,7 @@ dog.speak()
 			if (!onLoadCallback) throw new Error('onLoad was not called');
 			const result = await onLoadCallback({ path: coffeeFile });
 
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(result.contents).toBeDefined();
 			expect(result.loader).toBe('js');
 		});
@@ -363,9 +385,211 @@ More documentation here.
 			if (!onLoadCallback) throw new Error('onLoad was not called');
 			const result = await onLoadCallback({ path: litcoffeeFile });
 
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(result.contents).toBeDefined();
 			expect(result.loader).toBe('js');
 			expect(result.contents).toContain('square');
+		});
+	});
+
+	describe('CSON support', () => {
+		let tempDir: string;
+
+		beforeEach(async () => {
+			tempDir = await mkdtemp(join(tmpdir(), 'bun-cson-'));
+		});
+
+		afterEach(async () => {
+			await rm(tempDir, { recursive: true, force: true });
+		});
+
+		test('matches .cson files in filter', () => {
+			const plugin = Plugin();
+			let filterRegex: RegExp | undefined;
+
+			const mockBuilder = {
+				onLoad: mock((config: OnLoadConfig, _callback: OnLoadCallback) => {
+					filterRegex = config.filter;
+				}),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: Mock builder for testing
+			plugin.setup(mockBuilder as any);
+
+			if (!filterRegex) throw new Error('onLoad was not called');
+			expect(filterRegex.test('config.cson')).toBe(true);
+			expect(filterRegex.test('package.cson')).toBe(true);
+			expect(filterRegex.test('data/settings.cson')).toBe(true);
+		});
+
+		test('parses CSON files', async () => {
+			const csonFile = join(tempDir, 'data.cson');
+			const csonSource = `
+# CSON Configuration
+name: "test-package"
+version: "1.0.0"
+config:
+  enabled: true
+  count: 42
+  items: [
+    "one"
+    "two"
+    "three"
+  ]
+`;
+			await writeFile(csonFile, csonSource);
+
+			const plugin = Plugin();
+			let onLoadCallback: OnLoadCallback | undefined;
+
+			const mockBuilder = {
+				onLoad: mock((_config: OnLoadConfig, callback: OnLoadCallback) => {
+					onLoadCallback = callback;
+				}),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: Mock builder for testing
+			plugin.setup(mockBuilder as any);
+
+			if (!onLoadCallback) throw new Error('onLoad was not called');
+			const result = await onLoadCallback({ path: csonFile });
+
+			expect(result).toHaveProperty('exports');
+			expect(result).toHaveProperty('loader');
+			expect(result.loader).toBe('object');
+			if (!isObjectResult(result)) throw new Error('Expected object result');
+			expect(result.exports).toEqual({
+				name: 'test-package',
+				version: '1.0.0',
+				config: {
+					enabled: true,
+					count: 42,
+					items: ['one', 'two', 'three'],
+				},
+			});
+		});
+
+		test('handles simple CSON objects', async () => {
+			const csonFile = join(tempDir, 'simple.cson');
+			const csonSource = `
+key: "value"
+number: 123
+boolean: true
+`;
+			await writeFile(csonFile, csonSource);
+
+			const plugin = Plugin();
+			let onLoadCallback: OnLoadCallback | undefined;
+
+			const mockBuilder = {
+				onLoad: mock((_config: OnLoadConfig, callback: OnLoadCallback) => {
+					onLoadCallback = callback;
+				}),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: Mock builder for testing
+			plugin.setup(mockBuilder as any);
+
+			if (!onLoadCallback) throw new Error('onLoad was not called');
+			const result = await onLoadCallback({ path: csonFile });
+
+			if (!isObjectResult(result)) throw new Error('Expected object result');
+			expect(result.exports).toEqual({
+				key: 'value',
+				number: 123,
+				boolean: true,
+			});
+		});
+
+		test('handles nested CSON structures', async () => {
+			const csonFile = join(tempDir, 'nested.cson');
+			const csonSource = `
+database:
+  host: "localhost"
+  port: 5432
+  credentials:
+    username: "admin"
+    password: "secret"
+  options:
+    ssl: true
+    poolSize: 10
+`;
+			await writeFile(csonFile, csonSource);
+
+			const plugin = Plugin();
+			let onLoadCallback: OnLoadCallback | undefined;
+
+			const mockBuilder = {
+				onLoad: mock((_config: OnLoadConfig, callback: OnLoadCallback) => {
+					onLoadCallback = callback;
+				}),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: Mock builder for testing
+			plugin.setup(mockBuilder as any);
+
+			if (!onLoadCallback) throw new Error('onLoad was not called');
+			const result = await onLoadCallback({ path: csonFile });
+
+			if (!isObjectResult(result)) throw new Error('Expected object result');
+			expect(result.exports).toHaveProperty('database');
+			// biome-ignore lint/suspicious/noExplicitAny: Testing dynamic CSON structure
+			expect((result.exports as any).database).toHaveProperty('credentials');
+			// biome-ignore lint/suspicious/noExplicitAny: Testing dynamic CSON structure
+			expect((result.exports as any).database.credentials.username).toBe('admin');
+		});
+
+		test('handles CSON arrays', async () => {
+			const csonFile = join(tempDir, 'array.cson');
+			const csonSource = `[
+  "item1"
+  "item2"
+  "item3"
+]`;
+			await writeFile(csonFile, csonSource);
+
+			const plugin = Plugin();
+			let onLoadCallback: OnLoadCallback | undefined;
+
+			const mockBuilder = {
+				onLoad: mock((_config: OnLoadConfig, callback: OnLoadCallback) => {
+					onLoadCallback = callback;
+				}),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: Mock builder for testing
+			plugin.setup(mockBuilder as any);
+
+			if (!onLoadCallback) throw new Error('onLoad was not called');
+			const result = await onLoadCallback({ path: csonFile });
+
+			if (!isObjectResult(result)) throw new Error('Expected object result');
+			expect(Array.isArray(result.exports)).toBe(true);
+			expect(result.exports).toEqual(['item1', 'item2', 'item3']);
+		});
+
+		test('handles invalid CSON syntax', async () => {
+			const csonFile = join(tempDir, 'invalid.cson');
+			const invalidSource = `
+key: "value
+missing closing quote
+`;
+			await writeFile(csonFile, invalidSource);
+
+			const plugin = Plugin();
+			let onLoadCallback: OnLoadCallback | undefined;
+
+			const mockBuilder = {
+				onLoad: mock((_config: OnLoadConfig, callback: OnLoadCallback) => {
+					onLoadCallback = callback;
+				}),
+			};
+
+			// biome-ignore lint/suspicious/noExplicitAny: Mock builder for testing
+			plugin.setup(mockBuilder as any);
+
+			if (!onLoadCallback) throw new Error('onLoad was not called');
+			await expectToReject(onLoadCallback({ path: csonFile }));
 		});
 	});
 
@@ -461,6 +685,7 @@ result = add 2, 3
 			const result = await onLoadCallback({ path: coffeeFile });
 
 			// Try to evaluate the compiled JavaScript (basic syntax check)
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(() => {
 				new Function(result.contents);
 			}).not.toThrow();
@@ -488,6 +713,7 @@ result = add 2, 3
 			const result = await onLoadCallback({ path: coffeeFile });
 
 			expect(result).toBeDefined();
+			if (!isSourceResult(result)) throw new Error('Expected source result');
 			expect(result.contents).toBeDefined();
 			// The compilation succeeds, meaning filename was passed correctly
 		});
