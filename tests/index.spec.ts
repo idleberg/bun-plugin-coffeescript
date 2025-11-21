@@ -8,6 +8,22 @@ import Plugin from '../src/index.ts';
 type OnLoadConfig = { filter: RegExp };
 type OnLoadCallback = (args: { path: string }) => Promise<{ contents: string; loader: string }>;
 
+/**
+ * Helper to test async rejections in Bun 1.0+
+ * Bun 1.0 doesn't support expect().rejects.toThrow(), so we use try-catch
+ */
+async function expectToReject(promise: Promise<unknown>): Promise<void> {
+	let didThrow = false;
+
+	try {
+		await promise;
+	} catch {
+		didThrow = true;
+	}
+
+	expect(didThrow).toBe(true);
+}
+
 describe('bun-plugin-coffeescript', () => {
 	describe('Plugin export', () => {
 		test('exports a function', () => {
@@ -386,7 +402,7 @@ if
 
 			// Should throw a compilation error
 			if (!onLoadCallback) throw new Error('onLoad was not called');
-			await expect(onLoadCallback({ path: coffeeFile })).rejects.toThrow();
+			await expectToReject(onLoadCallback({ path: coffeeFile }));
 		});
 
 		test('handles missing file', async () => {
@@ -406,7 +422,7 @@ if
 
 			// Should throw a file read error
 			if (!onLoadCallback) throw new Error('onLoad was not called');
-			await expect(onLoadCallback({ path: nonExistentFile })).rejects.toThrow();
+			await expectToReject(onLoadCallback({ path: nonExistentFile }));
 		});
 	});
 
