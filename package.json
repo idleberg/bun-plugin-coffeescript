@@ -1,6 +1,6 @@
 {
 	"name": "bun-plugin-coffeescript",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Use CoffeeScript with Bun, old meets new",
 	"license": "MIT",
 	"author": "Jan T. Sott",
