@@ -6,9 +6,14 @@
 	"author": "Jan T. Sott",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/idleberg/node-package-template.git"
+		"url": "git+https://github.com/idleberg/bun-plugin-coffeescript.git"
 	},
-	"keywords": [],
+	"keywords": [
+		"bun",
+		"bun-plugin",
+		"coffeescript",
+		"coffee-script"
+	],
 	"type": "module",
 	"exports": {
 		".": {
