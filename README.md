@@ -6,10 +6,6 @@
 [![Version: npm](https://img.shields.io/npm/v/bun-plugin-coffeescript?style=for-the-badge)](https://www.npmjs.org/package/bun-plugin-coffeescript)
 ![GitHub branch check runs](https://img.shields.io/github/check-runs/idleberg/bun-plugin-coffeescript/main?style=for-the-badge)
 
-## Description
-
-A template with highly opinionated configuration. Works for me, maybe not for you!
-
 ## Installation
 
 ```shell
