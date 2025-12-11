@@ -17,14 +17,14 @@ bun install bun-plugin-coffeescript
 ## Usage 🚀
 
 ```typescript
-import CoffeePlugin from "bun-plugin-coffeescript";
+import CoffeeScript from "bun-plugin-coffeescript";
 
 Bun.build({
   entrypoints: ["app.coffee"],
   outdir: "dist",
   target: "browser",
   plugins: [
-    CoffeePlugin(/* compiler options */),
+    CoffeeScript(/* compiler options */),
   ],
 });
 ```
